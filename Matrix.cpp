@@ -5,6 +5,7 @@
 #include <cstdlib>   // For malloc, calloc, free
 #include <stdlib.h>
 #include <stdexcept> // For std::out_of_range
+#include <string.h>
 #include "Matrix.h"
 #include "common.h"
 
