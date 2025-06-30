@@ -151,8 +151,9 @@ int parse_arguments(int argc, char* argv[], ProgramArguments* _arguments) {
         return -1;
     }
     
-    if ( ( l_flag == 1) && (mat_check != 0) ) {
-        fprintf(stderr, "Error: Read from file option (-l) cannot be used with parameterized matrix sizes\n");
+    if ( ( l_flag == 1) && 
+        ( (g_flag == 1 ) || (mat_check != 0) ) ) {
+        fprintf(stderr, "Error: Read from file option (-l) cannot be used together with -g and/or parameterized matrix sizes\n");
         return -1;
 	}
 
@@ -168,7 +169,8 @@ int parse_arguments(int argc, char* argv[], ProgramArguments* _arguments) {
 int test_matrix_multiplication() {
     // Test matrix multiplication logic here
     // This is a placeholder for actual test code
-    std::cout << "Testing matrix multiplication..." << std::endl;
+    //std::cout << "Testing matrix multiplication..." << std::endl;
+	printf("Testing matrix multiplication...\n");
     int mat1_row_count = 20;
     int mat1_col_count = 25;
 
@@ -187,20 +189,23 @@ int test_matrix_multiplication() {
     // Create 2x3 matrix (initialized to zeros)
     Matrix* mat1 = create_matrix(matrix_id, operation_id, mat1_row_count, mat1_col_count, MATRIX_TYPE_OPERAND);
     if (!mat1) {
-        std::cerr << "Matrix allocation failed!" << std::endl;
-        return -1;
+        //std::cerr << "Matrix allocation failed!" << std::endl;
+        fprintf(stderr, "Matrix allocation failed!\n");
+        return RESULT_ERROR;
     }
 
     Matrix* mat2 = create_matrix(matrix_id, operation_id, mat2_row_count, mat2_col_count, MATRIX_TYPE_OPERAND);
     if (!mat2) {
-        std::cerr << "Matrix allocation failed!" << std::endl;
-        return -1;
+        //std::cerr << "Matrix allocation failed!" << std::endl;
+        fprintf(stderr, "Matrix allocation failed!\n");
+        return RESULT_ERROR;
     }
 
     Matrix* mat_result = create_matrix(matrix_id, operation_id, mat1_row_count, mat2_col_count, MATRIX_TYPE_RESULT);
-    if (!mat_result) {
-        std::cerr << "Matrix allocation failed!" << std::endl;
-        return -1;
+    if (mat_result == NULL) {
+        //std::cerr << "Matrix allocation failed!" << std::endl;
+        fprintf(stderr, "Matrix allocation failed!\n");
+        return RESULT_ERROR;
     }
 
     unsigned short result;
@@ -212,7 +217,8 @@ int test_matrix_multiplication() {
     unsigned int mul_result = multiply_matrices(mat1, mat2, mat_result);
 
     // Read values
-    std::cout << "Matrix Result:\n";
+    //std::cout << "Matrix Result:\n";
+	printf("Result Matrix\n");
     matrix_print_info(mat_result);
 
     // Free memory
@@ -239,7 +245,8 @@ int generate_matrix_test_data(ProgramArguments* _arguments, Operation* _operatio
 		// Create matrix operand 1 
         Matrix* matrix_operand_1 = create_matrix(matrix_id_counter++, operation_id_counter, _arguments->mat1_row_count, _arguments->mat1_col_count, MATRIX_TYPE_OPERAND);
         if (!matrix_operand_1) {
-            std::cerr << "Matrix allocation failed!" << std::endl;
+            //std::cerr << "Matrix allocation failed!" << std::endl;
+			fprintf(stderr, "Matrix allocation failed!\n");
             return -1;
         }
 		init_matrix_operand1(matrix_operand_1);
@@ -247,7 +254,8 @@ int generate_matrix_test_data(ProgramArguments* _arguments, Operation* _operatio
         // Create matrix operand 2
         Matrix* matrix_operand_2 = create_matrix(matrix_id_counter++, operation_id_counter, _arguments->mat2_row_count, _arguments->mat2_col_count, MATRIX_TYPE_OPERAND);
         if (!matrix_operand_2) {
-            std::cerr << "Matrix allocation failed!" << std::endl;
+            //std::cerr << "Matrix allocation failed!" << std::endl;
+            fprintf(stderr, "Matrix allocation failed!\n");
             return -1;
         }
 		init_matrix_operand2(matrix_operand_2);
@@ -255,12 +263,14 @@ int generate_matrix_test_data(ProgramArguments* _arguments, Operation* _operatio
         // Create matrix result
         Matrix* matrix_result = create_matrix(matrix_id_counter++, operation_id_counter, _arguments->mat1_row_count, _arguments->mat2_col_count, MATRIX_TYPE_RESULT);
         if (!matrix_result) {
-            std::cerr << "Matrix allocation failed!" << std::endl;
+            //std::cerr << "Matrix allocation failed!" << std::endl;
+            fprintf(stderr, "Matrix allocation failed!\n");
             return -1;
         }
         
 		if (multiply_matrices(matrix_operand_1, matrix_operand_2, matrix_result) != MATX_OP_SUCCESS ) {
-            std::cerr << "Matrix multiplication failed!" << std::endl;
+            //std::cerr << "Matrix multiplication failed!" << std::endl;
+            fprintf(stderr, "Matrix multiplication failed!\n");
             free_matrix(matrix_operand_1);
             free_matrix(matrix_operand_2);
             free_matrix(matrix_result);
@@ -270,7 +280,8 @@ int generate_matrix_test_data(ProgramArguments* _arguments, Operation* _operatio
 		// create operation
 		Operation* current_operation = (Operation*)malloc(sizeof(Operation)); // Allocate memory for the operation
         if (!current_operation) {
-            std::cerr << "Operation allocation failed!" << std::endl;
+            //std::cerr << "Operation allocation failed!" << std::endl;
+			fprintf(stderr, "Operation allocation failed!\n");
             free_matrix(matrix_operand_1);
             free_matrix(matrix_operand_2);
             free_matrix(matrix_result);
@@ -304,30 +315,44 @@ int main(int argc, char* argv[]) {
 
 	//int result = test_persistence(operations);
 	
-	if (arguments->g_flag == 1) {
+    if (arguments->g_flag == 1) {
         operation_count = generate_matrix_test_data(arguments, operations);
-	}
 
-	const char* matrix_filename = "Matrixtest.txt";
-	//printf("Operation 3 result matrix value: %d\n", operations[3].result->uint_data);
+        char* matrix_filename = arguments->filename;
+        //printf("Operation 3 result matrix value: %d\n", operations[3].result->uint_data);
 
-    FILE* file = fopen(matrix_filename, "w");
-    if (file == nullptr) {
-        fprintf(stderr, "Error opening file %s for writing.\n", matrix_filename);
-        return -1; // Exit with error code
-	}
-    else {
-        fwrite("\n", sizeof(char), strlen("\n"), file);
-		fclose(file);
-        for (int i = 0; i < operation_count; i++) {
-            
-            if (i == 9) {
-                printf("Operation %d:\n", i);
-			}
-            operation_print_info(&operations[i]);
-            int save_result = save_operation_to_file(matrix_filename, operations);
+        FILE* file = fopen(matrix_filename, "w");
+        if (file == nullptr) {
+            fprintf(stderr, "Error opening file %s for writing.\n", matrix_filename);
+            return -1; // Exit with error code
+        }
+        else {
+            //fwrite("\n", sizeof(char), strlen("\n"), file);
+            fclose(file);
+            for (int i = 0; i < operation_count; i++) {
+
+                if (i == 9) {
+                    printf("Operation %d:\n", i);
+                }
+                operation_print_info(&operations[i]);
+                int save_result = save_operation_to_file(matrix_filename, operations);
+            }
         }
     }
+    else if (arguments->l_flag == 1) {
+        // Load matrix from file
+        char* matrix_filename = arguments->filename;
+        printf("Loading matrix from file: %s\n", matrix_filename);
+        result = test_persistence(operations);
+        if (result != 0) {
+            fprintf(stderr, "Error loading operations from file.\n");
+            return -1; // Exit with error code
+        }
+        
+        for (int i = 0; i < operation_count; i++) {
+            operation_print_info(&operations[i]);
+        }
+	}
 
 	result = 0;
 
